@@ -29,7 +29,7 @@ add_executable(keypad
 
 target_include_directories(keypad PRIVATE ${CMAKE_SOURCE_DIR}/src)
 
-target_link_libraries(keypad pico_stdlib hardware_gpio pico_multicore hardware_adc)
+target_link_libraries(keypad pico_stdlib hardware_gpio pico_multicore pico_time hardware_adc)
 
 pico_add_extra_outputs(keypad)
 pico_enable_stdio_usb(keypad 1)

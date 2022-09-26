@@ -26,26 +26,56 @@ int main() {
     adc_gpio_init(ADC0);
     adc_select_input(0);
 
-    uint16_t min_hall = 65535;
-    uint16_t max_hall = 0;
-    for (int i = 0; i<100000; i++) {
-        uint16_t result = adc_read();
-        if (result > max_hall) {
-            max_hall = result;
-        }
-        if (result < min_hall) {
-            min_hall = result;
-        }
-        sleep_us(100);
-    }
+    uint64_t loop_timer;
+    bool z_hold = false;
+    bool x_hold = false;
+
+    // uint16_t min_hall = 65535;
+    // uint16_t max_hall = 0;
+    // for (int i = 0; i<100000; i++) {
+    //     uint16_t result = adc_read();
+    //     if (result > max_hall) {
+    //         max_hall = result;
+    //     }
+    //     if (result < min_hall) {
+    //         min_hall = result;
+    //     }
+    //     sleep_us(100);
+    // }
     gpio_put(LED_PIN,false);
 
-    printf("vals between %i and %i", min_hall, max_hall);
-    sleep_ms(5000);
+    // sleep_ms(5000);
+    loop_timer = to_us_since_boot(get_absolute_time());
     while (true) {
-        uint16_t result = adc_read();
-        sleep_ms(33);
-        printf("\nresult: %i",result);
+        if (to_us_since_boot(get_absolute_time()) > loop_timer) {
+            loop_timer += 500;
+            adc_select_input(0);
+            uint16_t result_z = adc_read();
+            adc_select_input(1);
+            uint16_t result_x = adc_read();
+
+            if (!z_hold && result_z < 1915) {
+                z_hold = true;
+            }
+            if (z_hold && result_z > 2100) {
+                z_hold = false;
+            }
+
+            if (!x_hold && result_x < 1528) {
+                x_hold = true;
+            }
+            if (x_hold && result_x > 1900) {
+                x_hold = false;
+            }
+
+            if (x_hold || z_hold) {
+                gpio_put(LED_PIN, true);
+
+            }
+            else {
+                gpio_put(LED_PIN, false);
+            }
+        }
     }
 }
 
