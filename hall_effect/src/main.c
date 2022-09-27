@@ -36,6 +36,11 @@
 #define ADC0 26
 #define ADC1 27
 
+#define X_TRIG 1560
+#define X_RELEASE 1710
+#define Z_TRIG 1930
+#define Z_RELEASE 2030
+
 //--------------------------------------------------------------------+
 // MACRO CONSTANT TYPEDEF PROTYPES
 //--------------------------------------------------------------------+
@@ -224,17 +229,17 @@ void hid_task(void)
     adc_select_input(1);
     uint16_t result_x = adc_read();
 
-    if (!z_hold && result_z < 1920) {
+    if (!z_hold && result_z < Z_TRIG) {
         z_hold = true;
     }
-    if (z_hold && result_z > 2100) {
+    if (z_hold && result_z > Z_RELEASE) {
         z_hold = false;
     }
 
-    if (!x_hold && result_x < 1545) {
+    if (!x_hold && result_x < X_TRIG) {
         x_hold = true;
     }
-    if (x_hold && result_x > 1900) {
+    if (x_hold && result_x > X_RELEASE) {
         x_hold = false;
     }
 
