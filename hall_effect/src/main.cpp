@@ -49,6 +49,11 @@ int main() {
     }
 }
 
+int websocket() {
+    int port;
+    int
+}
+
 // int main() {
 //     stdio_init_all();
 //     printf("ADC Example, measuring GPIO26\n");
