@@ -22,7 +22,6 @@
  * THE SOFTWARE.
  *
  */
-
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -30,16 +29,16 @@
 #include "bsp/board.h"
 #include "tusb.h"
 #include "hardware/adc.h"
+#include "hardware/gpio.h"
+#include "hardware/sync.h"
+#include "hardware/structs/ioqspi.h"
+#include "hardware/structs/sio.h"
 
 #include "usb_descriptors.h"
+#include "thing.h"
 
 #define ADC0 26
 #define ADC1 27
-
-#define X_TRIG 1560
-#define X_RELEASE 1710
-#define Z_TRIG 1930
-#define Z_RELEASE 2030
 
 //--------------------------------------------------------------------+
 // MACRO CONSTANT TYPEDEF PROTYPES
@@ -50,6 +49,8 @@
  * - 1000 ms : device mounted
  * - 2500 ms : device is suspended
  */
+
+
 enum  {
   BLINK_NOT_MOUNTED = 250,
   BLINK_MOUNTED = 1000,
@@ -58,6 +59,13 @@ enum  {
 
 bool z_hold = false;
 bool x_hold = false;
+int X_TRIG = 1960;
+int X_RELEASE = 2110;
+int Z_TRIG = 2230;
+int Z_RELEASE = 2430;
+uint16_t Z_UNPRESSED = 0;
+uint16_t X_UNPRESSED = 0;
+
 
 static uint32_t blink_interval_ms = BLINK_NOT_MOUNTED;
 
@@ -67,24 +75,27 @@ void hid_task(void);
 /*------------- MAIN -------------*/
 int main(void)
 {
-  board_init();
-
+    board_init();
 
     adc_init();
     adc_gpio_init(ADC0);
     adc_gpio_init(ADC1);
-  tusb_init();
+    tusb_init();
 
-  board_led_write(true);
-  while (1)
-  {
+    sleep_ms(500);
+    adc_select_input(0);
+    uint16_t Z_UNPRESSED = adc_read();
+    adc_select_input(1);
+    uint16_t X_UNPRESSED = adc_read();
+    board_led_write(true);
+    while (1)
+    {
     tud_task(); // tinyusb device task
     // led_blinking_task();
-
     hid_task();
-  }
+}
 
-  return 0;
+return 0;
 }
 
 //--------------------------------------------------------------------+
@@ -228,6 +239,17 @@ void hid_task(void)
     uint16_t result_z = adc_read();
     adc_select_input(1);
     uint16_t result_x = adc_read();
+
+    if (get_bootsel_buttony()) {
+        // X_TRIG = X_UNPRESSED-(0.8*(X_UNPRESSED-result_x));
+        // Z_TRIG = Z_UNPRESSED-(0.8*(Z_UNPRESSED-result_z));
+        // X_RELEASE = X_UNPRESSED-(0.6*(X_UNPRESSED-result_x));
+        // Z_RELEASE = Z_UNPRESSED-(0.6*(Z_UNPRESSED-result_z));
+        X_TRIG = result_x*1.1;
+        Z_TRIG = result_z*1.1;
+        X_RELEASE = result_x*1.2;
+        Z_RELEASE = result_z*1.2;
+    }
 
     if (!z_hold && result_z < Z_TRIG) {
         z_hold = true;
